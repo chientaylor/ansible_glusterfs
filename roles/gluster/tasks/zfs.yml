@@ -1,0 +1,62 @@
+---
+- name: Set Kernel Headers
+  ansible.builtin.set_fact:
+    kernel_headers_package: "linux-headers-{{ ansible_architecture }}"
+  tags:
+    - gluster
+    - zfs
+  when:
+    - kernel_headers_package is not defined
+
+- name: Install Linux Kernel Headers
+  ansible.builtin.package:
+    name: "{{ kernel_headers_package }}"
+    state: present
+  tags:
+    - gluster
+    - zfs
+
+- name: Install ZFS
+  ansible.builtin.package:
+    name:
+      - zfsutils-linux
+      - zfs-dkms
+    state: present
+  tags:
+    - gluster
+    - zfs
+
+- name: Load ZFS Kernel Modules
+  community.general.modprobe:
+    name: zfs
+    state: present
+    persistent: present
+  tags:
+    - gluster
+    - zfs
+
+- name: Install ZFS on Disk
+  ansible.builtin.command: "zpool create -f {{ gluster_pool_name }} {{ gluster_disk_device }}"
+  tags:
+    - gluster
+    - zfs
+  when:
+    - gluster_force_disk_partitioning_delete_everything == "DELETE"
+    - gluster_force_disk_partitioning_make_it_go_away == "GOAWAY"
+
+- name: Set up ZFS for Brick
+  community.general.zfs:
+    name: "{{ gluster_pool_name }}/brick"
+    state: present
+  tags:
+    - gluster
+    - zfs
+
+- name: Set up ZFS Bricks
+  community.general.zfs:
+    name: "{{ gluster_pool_name }}/brick/{{ item }}"
+    state: present
+  loop: "{{ gluster_volume_names }}"
+  tags:
+    - gluster
+    - zfs

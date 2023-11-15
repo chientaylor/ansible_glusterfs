@@ -1,0 +1,9 @@
+---
+gluster_force_disk_partitioning_delete_everything: ""
+gluster_force_disk_partitioning_make_it_go_away: ""
+gluster_pool_name: "storage"
+gluster_volume_name: "gluster"
+gluster_backing_zfs: False
+gluster_disk_fs: "xfs"
+gluster_pool_replicas: 2
+linux_headers_default: True

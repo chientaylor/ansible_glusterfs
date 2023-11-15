@@ -1,0 +1,12 @@
+all:
+  children:
+    gluster:
+      hosts:
+        192.168.0.10:
+          gluster_disk_device: "/dev/disk/by-id/ata-Samsung_SSD_850_PRO_256GB_ABCDEFGHIJKLMNO"
+        192.168.0.11:
+          gluster_disk_device: "/dev/disk/by-id/ata-Samsung_SSD_850_PRO_256GB_PQRSTUVWXYZ1234"
+        192.168.0.12:
+          gluster_disk_device: "/dev/disk/by-id/ata-Samsung_SSD_850_PRO_256GB_567890ABCDEFGHI"
+        192.168.0.13:
+          gluster_disk_device: "/dev/disk/by-id/ata-Samsung_SSD_850_PRO_256GB_JKLMNOPQRSTUVWX"

@@ -1,0 +1,134 @@
+---
+- name: Install Parted
+  ansible.builtin.package:
+    name: parted
+    state: present
+  tags:
+    - gluster
+    - parted
+
+- name: Read all paritions
+  community.general.parted:
+    device: "{{ gluster_disk_device }}"
+    unit: MiB
+  register: gluster_disk_info
+  tags:
+    - gluster
+    - parted
+
+- name: Delete all disk patitions
+  community.general.parted:
+    device: "{{ gluster_disk_device }}"
+    number: "{{ item.num }}"
+    state: absent
+  loop: "{{ gluster_disk_info.partitions }}"
+  tags: 
+    - gluster
+    - parted
+  when:
+    - gluster_force_disk_partitioning_delete_everything == "DELETE"
+    - gluster_force_disk_partitioning_make_it_go_away == "GOAWAY"
+
+- name: Set Kernel Headers
+  ansible.builtin.set_fact:
+    kernel_headers_package: "linux-headers-{{ ansible_architecture }}"
+  tags:
+    - gluster
+    - zfs
+  when: 
+    - kernel_headers_package is not defined
+
+- name: Run ZFS setup
+  ansible.builtin.include_tasks: zfs.yml
+  tags:
+    - gluster
+    - zfs
+  when:
+    - gluster_backing_zfs
+
+- name: Run FS setup
+  ansible.builtin.include_tasks: fs.yml
+  tags:
+    - gluster
+    - fs
+  when:
+    - gluster_backing_zfs is sameas False
+
+- name: Install GlusterFS
+  ansible.builtin.package:
+    name: glusterfs-server
+    state: present
+  tags:
+    - gluster
+    - gluster-server
+
+- name: Start GlusterFS Daemon
+  ansible.builtin.service:
+    name: glusterd
+    state: started
+    enabled: True
+  tags:
+    - gluster
+    - gluster-service
+
+- name: Peer Gluster Servers
+  gluster.gluster.gluster_peer:
+    state: present
+    nodes: "{{ gluster_members }}"
+  tags:
+    - gluster
+    - gluster-server
+
+- name: Set up GlusterFS
+  gluster.gluster.gluster_volume:
+    state: present
+    name: "{{ item }}"
+    bricks: "/{{ gluster_pool_name }}/brick/{{ item }}"
+    replicas: "{{ gluster_pool_replicas }}"
+    cluster: "{{ gluster_members }}"
+    rebalance: True
+    force: True
+  loop: "{{ gluster_volume_names }}"
+  run_once: True
+  tags:
+    - gluster
+    - gluster-server
+
+- name: Start Gluster Cluster
+  gluster.gluster.gluster_volume:
+    state: started
+    name: "{{ item }}"
+  loop: "{{ gluster_volume_names }}"
+  run_once: True
+  tags:
+    - gluster
+    - gluster-server
+
+- name: Install Gluster Client
+  ansible.builtin.package:
+    name: glusterfs-client
+    state: present
+  tags:
+    - gluster
+    - gluster-client
+
+- name: Create Mount Points
+  ansible.builtin.file:
+    state: directory
+    mode: '0755'
+    path: "/mnt/{{ item }}"
+  loop: "{{ gluster_volume_names }}"
+  tags:
+    - gluster
+    - gluster-client
+
+- name: Mount Gluster Cluster
+  ansible.posix.mount:
+    src: "127.0.0.1:{{ item }}"
+    fstype: glusterfs
+    path: "/mnt/{{ item }}"
+    state: mounted
+  loop: "{{ gluster_volume_names }}"
+  tags:
+    - gluster
+    - gluster-client

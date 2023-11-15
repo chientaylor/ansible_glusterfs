@@ -1,0 +1,68 @@
+---
+- name: Install XFS Utils
+  ansible.builtin.package:
+    name: xfsprogs
+    state: present
+  when: gluster_disk_fs == "xfs"
+  tags:
+    - gluster
+    - xfs
+
+- name: Create new XFS Partition
+  community.general.parted:
+    device: "{{ gluster_disk_device }}"
+    number: 1
+    state: present
+    fs_type: "{{ gluster_disk_fs }}"
+    label: gpt
+    name: "{{ gluster_pool_name }}"
+  tags:
+    - gluster
+    - parted
+    - fs
+  when:
+    - gluster_force_disk_partitioning_delete_everything == "DELETE"
+    - gluster_force_disk_partitioning_make_it_go_away == "GOAWAY"
+
+- name: Create new XFS Filesystem on Partition
+  community.general.filesystem:
+    dev: "{{ gluster_disk_device }}-part1"
+    fstype: "{{ gluster_disk_fs }}"
+    force: True
+  tags:
+    - gluster
+    - parted
+    - fs
+  when:
+    - gluster_force_disk_partitioning_delete_everything == "DELETE"
+    - gluster_force_disk_partitioning_make_it_go_away == "GOAWAY"
+
+- name: Mount XFS Filesystem
+  ansible.posix.mount:
+    path: "/{{ gluster_pool_name }}"
+    src: "{{ gluster_disk_device }}-part1"
+    fstype: "{{ gluster_disk_fs }}"
+    opts: noatime
+    state: mounted
+  tags:
+    - gluster
+    - fs
+
+- name: Create Brick Directory
+  ansible.builtin.file:
+    name: "{{ gluster_pool_name }}/brick"
+    state: directory
+    mode: '0755'
+  tags:
+    - gluster
+    - fs
+
+- name: Create Bricks
+  ansible.builtin.file:
+    name: "/{{ gluster_pool_name }}/brick/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop: "{{ gluster_volume_names }}"
+  tags:
+    - gluster
+    - fs

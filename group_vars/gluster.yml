@@ -1,0 +1,13 @@
+---
+gluster_members:
+  - 192.168.0.10
+  - 192.168.0.11
+  - 192.168.0.12
+  - 192.168.0.13
+
+gluster_volume_names:
+  - gv0
+  - gv1
+
+#gluster_force_disk_partitioning_delete_everything: "DELETE"
+#gluster_force_disk_partitioning_make_it_go_away: "GOAWAY"
