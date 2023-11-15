@@ -3,3 +3,4 @@
   roles:
   - gluster
   become: True
+  any_errors_fatal: True
