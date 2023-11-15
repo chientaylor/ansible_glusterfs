@@ -1,4 +1,18 @@
 ---
+- name: Verify variables
+  assert:
+    that:
+      - "{{ required_vars }} is defined"
+      - "{{ required_vars }} | length > 0"
+      - "{{ required_vars }} != None"
+    fail_msg: "{{ required_vars }} needs to be set"
+  loop_control:
+    loop_var: required_vars
+  with_items:
+    - gluster_disk_device
+    - gluster_members
+    - gluster_volume_names
+
 - name: Install Parted
   ansible.builtin.package:
     name: parted
